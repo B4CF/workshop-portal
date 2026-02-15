@@ -8,10 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #1a4d2e; --primary-light: #4f8355; --accent: #ff6b35;
-            --accent-light: #ff8c61; --bg: #faf8f5; --surface: #ffffff;
-            --text: #2d2d2d; --text-muted: #6b6b6b; --border: #e0ddd8;
-            --success: #27ae60; --warning: #f39c12;
+            /* Bridge4Change Foundation Brand Colors */
+            --primary: #2C4A5E; --primary-light: #3D6178; --accent: #F5B800;
+            --accent-light: #FFD54F; --bg: #F8F9FA; --surface: #ffffff;
+            --text: #1E3340; --text-muted: #8B98A5; --border: #E1E8ED;
+            --success: #10B981; --warning: #F59E0B;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
@@ -117,9 +118,12 @@
     
     <header>
         <div class="header-content">
-            <div>
-                <h1>🌱 Learning Portal</h1>
-                <p class="subtitle">Interactive Learning Platform</p>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <img src="1771142939250_B4C_Main_logo-01_Small.png" alt="Bridge4Change Foundation" style="height: 100px; width: auto;" onerror="this.style.display='none'">
+                <div>
+                    <h1 style="font-size: 1.75rem; color: #F5B800; margin: 0;">Bridge4Change Foundation</h1>
+                    <p class="subtitle">Learning Portal</p>
+                </div>
             </div>
             <div class="user-info hidden" id="user-info">
                 <div class="user-name" id="header-user-name"></div>
@@ -132,7 +136,10 @@
         <!-- Authentication Screen -->
         <div id="auth-screen" class="auth-container">
             <div class="card">
-                <h2>Welcome! 👋</h2>
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="1771142939250_B4C_Main_logo-01_Small.png" alt="Bridge4Change Foundation" style="height: 120px; width: auto; margin-bottom: 1rem;" onerror="this.style.display='none'">
+                </div>
+                <h2>Welcome! User👋</h2>
                 <div class="auth-tabs">
                     <div class="auth-tab active" onclick="switchTab('signin')">Sign In</div>
                     <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
@@ -147,7 +154,10 @@
                     <div class="form-group">
                         <label for="signin-password">Password *</label>
                         <input type="password" id="signin-password" required placeholder="Enter your password">
-                        <span class="password-toggle" onclick="togglePassword('signin-password')">👁️</span>
+                        <span class="password-toggle" onclick="togglePassword('signin-password')"></span>
+                    </div>
+                    <div style="text-align: right; margin-top: -0.75rem; margin-bottom: 1rem;">
+                        <a href="#" onclick="showForgotPassword(); return false;" style="color: var(--accent); font-size: 0.875rem; font-weight: 500; text-decoration: none;">Forgot password?</a>
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
                     <p style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.875rem;">
@@ -168,15 +178,15 @@
                     <div class="form-group">
                         <label for="signup-password">Password *</label>
                         <input type="password" id="signup-password" required placeholder="Create a password (min 6 characters)" minlength="6">
-                        <span class="password-toggle" onclick="togglePassword('signup-password')">👁️</span>
+                        <span class="password-toggle" onclick="togglePassword('signup-password')"></span>
                     </div>
                     <div class="form-group">
                         <label for="signup-institution">Institution/Organization *</label>
                         <input type="text" id="signup-institution" required placeholder="Your institution name">
                     </div>
                     <div class="form-group">
-                        <label for="signup-cohort">Cohort/Batch</label>
-                        <input type="text" id="signup-cohort" placeholder="e.g., Spring 2024">
+                        <label for="signup-Stream">Stream/Batch</label>
+                        <input type="text" id="signup-Stream" placeholder="e.g., Spring 2024">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
                     <p style="text-align: center; margin-top: 1rem; color: var(--text-muted); font-size: 0.875rem;">
@@ -329,7 +339,7 @@
             const password = document.getElementById('signup-password').value;
             const name = document.getElementById('signup-name').value;
             const institution = document.getElementById('signup-institution').value;
-            const cohort = document.getElementById('signup-cohort').value;
+            const Stream = document.getElementById('signup-Stream').value;
 
             // Check if user exists
             if (allUsers[email]) {
@@ -343,7 +353,7 @@
                 password: btoa(password), // Simple encoding (use proper hashing in production)
                 name: name,
                 institution: institution,
-                cohort: cohort || 'Not specified',
+                Stream: Stream || 'Not specified',
                 registeredAt: new Date().toISOString(),
                 progress: {
                     videosWatched: [],
@@ -362,7 +372,7 @@
                     email: email,
                     name: name,
                     institution: institution,
-                    cohort: cohort,
+                    Stream: Stream,
                     registeredAt: userData.registeredAt
                 }
             });
@@ -737,7 +747,80 @@
         function closeQuiz() {}
         function closeQuizIfClickedOutside() {}
 
+        // Forgot Password Functions
+        function showForgotPassword() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+            document.getElementById('forgot-email').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-new-password').value = '';
+        }
+
+        function resetPassword() {
+            const email = document.getElementById('forgot-email').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-new-password').value;
+
+            // Validation
+            if (!email) {
+                alert('Please enter your email address');
+                return;
+            }
+
+            if (!newPassword || !confirmPassword) {
+                alert('Please enter and confirm your new password');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('Password must be at least 6 characters');
+                return;
+            }
+
+            // TODO: Update password in your Google Sheets here
+            // Add your Google Sheets update code here
+            
+            alert('Password reset request submitted!\n\nEmail: ' + email + '\n\nNote: Connect this to your Google Sheets to actually update the password.');
+            closeForgotPassword();
+        }
+
         console.log('%c🌱 Workshop Learning Portal with Authentication', 'color: #1a4d2e; font-size: 20px; font-weight: bold;');
     </script>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="modal-overlay hidden" onclick="if(event.target === this) closeForgotPassword()">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeForgotPassword()">×</button>
+            
+            <h2 style="color: var(--primary); margin-bottom: 0.5rem;">Reset Password</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Enter your email and new password</p>
+            
+            <div class="form-group">
+                <label for="forgot-email">Email Address</label>
+                <input type="email" id="forgot-email" placeholder="your.email@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" placeholder="Enter new password (min 6 characters)" minlength="6" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm-new-password">Confirm Password</label>
+                <input type="password" id="confirm-new-password" placeholder="Confirm new password" minlength="6" required>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="resetPassword()">Reset Password</button>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted);">
+                Remember your password? <a href="#" onclick="closeForgotPassword(); return false;" style="color: var(--accent);">Sign In</a>
+            </p>
+        </div>
+    </div>
+
 </body>
 </html>

@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Bridge4Change Foundation Brand Colors */
+            /* Bridge4Change Brand Colors */
             --primary: #2C4A5E; --primary-light: #3D6178; --accent: #F5B800;
             --accent-light: #FFD54F; --bg: #F8F9FA; --surface: #ffffff;
             --text: #1E3340; --text-muted: #8B98A5; --border: #E1E8ED;
@@ -119,7 +119,7 @@
     <header>
         <div class="header-content">
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <img src="1771142939250_B4C_Main_logo-01_Small.png" alt="Bridge4Change Foundation" style="height: 100px; width: auto;" onerror="this.style.display='none'">
+                <img src="1771142939250_B4C_Main_logo-01_Small.png" alt="Bridge4Change Foundation" style="height: 120px; width: auto;" onerror="this.style.display='none'">
                 <div>
                     <h1 style="font-size: 1.75rem; color: #F5B800; margin: 0;">Bridge4Change Foundation</h1>
                     <p class="subtitle">Learning Portal</p>
@@ -139,7 +139,7 @@
                 <div style="text-align: center; margin-bottom: 2rem;">
                     <img src="1771142939250_B4C_Main_logo-01_Small.png" alt="Bridge4Change Foundation" style="height: 120px; width: auto; margin-bottom: 1rem;" onerror="this.style.display='none'">
                 </div>
-                <h2>Welcome! User👋</h2>
+                <h2>Welcome to Learning Portal!</h2>
                 <div class="auth-tabs">
                     <div class="auth-tab active" onclick="switchTab('signin')">Sign In</div>
                     <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
@@ -296,7 +296,7 @@
     <script>
         // Google Sheets Configuration
         const GOOGLE_SHEETS_CONFIG = {
-            WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyjWRlcJWa1EdHdnldZY177nt-M80P2nXNMOxn9pbw-GZpX9aOxjq7cbRhDBUALa5N-/exec', // Replace with your deployed Google Apps Script URL
+            WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxyGSVQe1VuyrhJova7_tpx_W5CEYg8Wh2qjRDYABJrX_Sg-wHnUcjyjG2I9iM4IRkf/exec', // Replace with your deployed Google Apps Script URL
             enabled: true // Set to true once you've deployed the Google Apps Script
         };
 
@@ -365,14 +365,15 @@
             allUsers[email] = userData;
             saveUsersToStorage();
 
-            // Send to Google Sheets
+            // Send to Google Sheets WITH PASSWORD
             await sendToGoogleSheets({
                 action: 'USER_REGISTRATION',
                 data: {
                     email: email,
+                    password: btoa(password), // Send encoded password
                     name: name,
                     institution: institution,
-                    Stream: Stream,
+                    cohort: Stream,
                     registeredAt: userData.registeredAt
                 }
             });
@@ -382,28 +383,98 @@
             document.getElementById('signin-email').value = email;
         });
 
-        // Sign In
-        document.getElementById('signin-form').addEventListener('submit', function(e) {
+        // Sign In - UPDATED TO CHECK GOOGLE SHEETS
+        document.getElementById('signin-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('signin-email').value;
             const password = document.getElementById('signin-password').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing In...';
 
-            const user = allUsers[email];
-            if (!user) {
-                alert('❌ No account found with this email. Please sign up first.');
-                return;
+            try {
+                let user = allUsers[email];
+                let passwordFromSheets = null;
+                
+                // If not in localStorage OR Google Sheets is enabled, fetch from Google Sheets
+                if ((!user || !user.password) && GOOGLE_SHEETS_CONFIG.enabled) {
+                    const response = await fetch(
+                        GOOGLE_SHEETS_CONFIG.WEB_APP_URL + '?action=GET_USER_DATA&email=' + encodeURIComponent(email)
+                    );
+                    
+                    if (response.ok) {
+                        const text = await response.text();
+                        const result = JSON.parse(text);
+                        
+                        if (result.success && result.data) {
+                            // User found in Google Sheets
+                            passwordFromSheets = result.data.password;
+                            
+                            // Reconstruct user object from Google Sheets
+                            user = {
+                                email: result.data.email,
+                                name: result.data.name,
+                                password: result.data.password,
+                                institution: result.data.institution,
+                                cohort: result.data.cohort,
+                                registeredAt: result.data.registeredAt,
+                                progress: {
+                                    videosWatched: [],
+                                    articlesRead: [],
+                                    quizzesCompleted: []
+                                }
+                            };
+                            
+                            // Save to localStorage for future quick access
+                            allUsers[email] = user;
+                            saveAllUsers();
+                        }
+                    }
+                }
+                
+                // Check if user exists
+                if (!user) {
+                    alert('❌ No account found with this email. Please sign up first.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                    return;
+                }
+
+                // Verify password
+                const encodedPassword = btoa(password);
+                if (user.password !== encodedPassword) {
+                    alert('❌ Incorrect password. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                    return;
+                }
+
+                // Successful login - send to Google Sheets
+                if (GOOGLE_SHEETS_CONFIG.enabled) {
+                    sendToGoogleSheets({
+                        action: 'USER_LOGIN',
+                        data: {
+                            email: email,
+                            name: user.name,
+                            loginTime: new Date().toISOString()
+                        }
+                    });
+                }
+
+                // Set current user and show dashboard
+                currentUser = user;
+                saveCurrentUser();
+                showDashboard();
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('❌ Login failed. Please check your internet connection and try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
             }
-
-            if (user.password !== btoa(password)) {
-                alert('❌ Incorrect password. Please try again.');
-                return;
-            }
-
-            // Successful login
-            currentUser = user;
-            saveCurrentUser();
-            showDashboard();
         });
 
         // Logout
@@ -785,10 +856,27 @@
                 return;
             }
 
-            // TODO: Update password in your Google Sheets here
-            // Add your Google Sheets update code here
+            // Update password in Google Sheets
+            const payload = {
+                action: 'PASSWORD_RESET',
+                data: {
+                    email: email,
+                    newPassword: btoa(newPassword), // Encode password
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            // Send to Google Sheets
+            sendToGoogleSheets(payload);
             
-            alert('Password reset request submitted!\n\nEmail: ' + email + '\n\nNote: Connect this to your Google Sheets to actually update the password.');
+            // Update local storage if user is resetting their own password
+            const storedUsers = JSON.parse(localStorage.getItem('allUsers') || '{}');
+            if (storedUsers[email]) {
+                storedUsers[email].password = btoa(newPassword);
+                localStorage.setItem('allUsers', JSON.stringify(storedUsers));
+            }
+
+            alert('✅ Password reset successfully!\n\nEmail: ' + email + '\n\nYou can now login with your new password.');
             closeForgotPassword();
         }
 

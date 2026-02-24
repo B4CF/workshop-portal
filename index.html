@@ -557,13 +557,31 @@
             }
 
             try {
+                // IMPORTANT: Google Apps Script Web Apps do NOT support true CORS preflight.
+                // Using 'no-cors' silently swallows errors and makes the response opaque (unreadable).
+                // The correct pattern is to POST JSON as a URL-encoded form field named "data",
+                // which avoids the preflight entirely (simple request) while still sending JSON.
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(payload));
+
                 const response = await fetch(GOOGLE_SHEETS_CONFIG.WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData
+                    // NO mode: 'no-cors' — we need to read the response
+                    // NO Content-Type header — let the browser set multipart boundary automatically
                 });
-                console.log('✅ Data sent to Google Sheets');
+
+                if (response.ok) {
+                    const text = await response.text();
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        console.log('✅ Data sent to Google Sheets:', result.message);
+                    } else {
+                        console.warn('⚠️ Google Sheets returned error:', result.message);
+                    }
+                } else {
+                    console.error('❌ Google Sheets HTTP error:', response.status, response.statusText);
+                }
             } catch (error) {
                 console.error('❌ Error sending to Google Sheets:', error);
             }
